@@ -1,5 +1,5 @@
 //
-//  LivePhoto.swift
+//  LivePhotoView.swift
 //  ImagePickerMacOSDemo
 //
 //  Created by Jerry Wong on 2020/5/29.
@@ -9,50 +9,50 @@
 import SwiftUI
 import PhotosUI
 
-struct LivePhoto : SwiftUIViewRepresentable {
+struct LivePhotoView : SwiftUIViewRepresentable {
     
     let livePhoto: PHLivePhoto
     
     var isPlaying: Binding<Bool>
     
     #if os(macOS)
-        func makeNSView(context: NSViewRepresentableContext<LivePhoto>) -> PHLivePhotoView {
+        func makeNSView(context: NSViewRepresentableContext<LivePhotoView>) -> PHLivePhotoView {
             let photoView = PHLivePhotoView()
             photoView.delegate = context.coordinator
             photoView.livePhoto = livePhoto
             return photoView
         }
 
-        func updateNSView(_ nsView: PHLivePhotoView, context: NSViewRepresentableContext<LivePhoto>) {
+        func updateNSView(_ nsView: PHLivePhotoView, context: NSViewRepresentableContext<LivePhotoView>) {
             isPlaying.wrappedValue ? nsView.startPlayback(with: .hint) : nsView.stopPlayback()
         }
         
     #else
-        func makeUIView(context: UIViewRepresentableContext<LivePhoto>) -> PHLivePhotoView {
+        func makeUIView(context: UIViewRepresentableContext<LivePhotoView>) -> PHLivePhotoView {
             let photoView = PHLivePhotoView()
             photoView.livePhoto = livePhoto
             return photoView
         }
 
-        func updateUIView(_ uiView: PHLivePhotoView, context: UIViewRepresentableContext<LivePhoto>) {
+        func updateUIView(_ uiView: PHLivePhotoView, context: UIViewRepresentableContext<LivePhotoView>) {
             isPlaying.wrappedValue ? uiView.startPlayback(with: .hint) : uiView.stopPlayback()
         }
     #endif
     
-    func makeCoordinator() -> LivePhotoCoordinator {
-        LivePhotoCoordinator(livePhoto: self)
+    func makeCoordinator() -> LivePhotoViewCoordinator {
+        LivePhotoViewCoordinator(livePhotoView: self)
     }
     
 }
 
-extension LivePhoto {
+extension LivePhotoView {
 
-    public class LivePhotoCoordinator: NSObject, PHLivePhotoViewDelegate {
+    public class LivePhotoViewCoordinator: NSObject, PHLivePhotoViewDelegate {
         
-        let livePhoto: LivePhoto
+        let livePhotoView: LivePhotoView
         
-        init(livePhoto: LivePhoto){
-            self.livePhoto = livePhoto
+        init(livePhotoView: LivePhotoView){
+            self.livePhotoView = livePhotoView
             super.init()
         }
         
@@ -61,7 +61,7 @@ extension LivePhoto {
         }
 
         func livePhotoView(_ livePhotoView: PHLivePhotoView, didEndPlaybackWith playbackStyle: PHLivePhotoViewPlaybackStyle) {
-            livePhoto.isPlaying.wrappedValue = false
+            self.livePhotoView.isPlaying.wrappedValue = false
         }
         
     }

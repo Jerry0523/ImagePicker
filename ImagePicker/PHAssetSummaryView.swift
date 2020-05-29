@@ -1,5 +1,5 @@
 //
-//  PHAssetView.swift
+//  PHAssetSummaryView.swift
 //  ImagePickerMacOSDemo
 //
 //  Created by Jerry Wong on 2020/5/1.
@@ -20,7 +20,7 @@ struct PHAssetSelectedView : View {
         return (isHidden || !isSelected) ? AnyView(EmptyView()) : AnyView(
             ZStack {
                 RoundedRectangle(cornerRadius: 5).inset(by: 1.5).stroke(Color.white, lineWidth: 5)
-                RoundedRectangle(cornerRadius: 3).inset(by: 1.5).stroke(PHAssetView.selectedColor, lineWidth: 3)
+                RoundedRectangle(cornerRadius: 3).inset(by: 1.5).stroke(PHAssetSelectedView.selectedColor, lineWidth: 3)
             }
         )
     #else
@@ -47,9 +47,11 @@ struct PHAssetSelectedView : View {
         )
     #endif
     }
+    
+    static let selectedColor = Color(red: 37.0 / 255.0, green: 101.0 / 255.0, blue: 217.0 / 255.0)
 }
 
-struct PHAssetView: View {
+struct PHAssetSummaryView: View {
     
     @EnvironmentObject var assetsProvider: AssetsProvider
     @Environment(\.assetsLoader) var assetsLoader: AssetsLoader
@@ -67,7 +69,7 @@ struct PHAssetView: View {
         if let asset = asset {
             return AnyView(
                 ZStack(alignment: .bottomTrailing) {
-                    PHImageView(targetSize: targetSize, loadTask: assetsLoader.imageTask(for: asset))
+                    PHThumbnailContentView(targetSize: targetSize, loadTask: assetsLoader.imageTask(for: asset))
                     Text(secondsToHoursMinutesSeconds(seconds: asset.duration))
                         .foregroundColor(.white)
                         .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 0)
@@ -114,7 +116,5 @@ struct PHAssetView: View {
             ? String(format: "%d:%02d:%02d", hour, min, sec)
             : String(format: "%02d:%02d", min, sec)
     }
-    
-    static let selectedColor = Color(red: 37.0 / 255.0, green: 101.0 / 255.0, blue: 217.0 / 255.0)
     
 }

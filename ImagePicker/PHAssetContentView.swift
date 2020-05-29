@@ -1,5 +1,5 @@
 //
-//  PHImageView.swift
+//  PHContentView.swift
 //  ImagePickerMacOSDemo
 //
 //  Created by Jerry Wong on 2020/5/1.
@@ -9,7 +9,7 @@
 import SwiftUI
 import Photos
 
-struct PHDetailLivePhotoView : View {
+struct PHLivePhotoContentView : View {
     
     @ObservedObject var task: AssetsLoader.Task<PHLivePhoto>
     
@@ -26,7 +26,7 @@ struct PHDetailLivePhotoView : View {
         let makeView = { () -> AnyView in
             switch self.task.result(for: .zero) {
             case .onCompletion(let item):
-                return AnyView(LivePhoto(livePhoto: item, isPlaying: self.$isPlaying).onTapGesture {
+                return AnyView(LivePhotoView(livePhoto: item, isPlaying: self.$isPlaying).onTapGesture {
                     self.isPlaying.toggle()
                 })
             case .onError(let error):
@@ -47,7 +47,7 @@ struct PHDetailLivePhotoView : View {
     
 }
 
-struct PHDetailVideoView : View {
+struct PHVideoContentView : View {
     
     @ObservedObject var task: AssetsLoader.Task<AVPlayerItem>
     
@@ -62,7 +62,7 @@ struct PHDetailVideoView : View {
         let makeView = { () -> AnyView in
             switch self.task.result(for: .zero) {
             case .onCompletion(let item):
-                return AnyView(VideoPlayer(item: item))
+                return AnyView(VideoPlayerView(item: item))
             case .onError(let error):
                 return AnyView(Text(error.localizedDescription))
             case .inProgress(let p):
@@ -81,7 +81,7 @@ struct PHDetailVideoView : View {
     
 }
 
-struct PHDetailImageView : View {
+struct PHImageContentView : View {
     
     @ObservedObject var task: AssetsLoader.Task<ImageType>
     
@@ -183,7 +183,7 @@ struct PHDetailImageView : View {
     }
 }
 
-struct PHImageView: View {
+struct PHThumbnailContentView: View {
     
     @ObservedObject var task: AssetsLoader.Task<ImageType>
     

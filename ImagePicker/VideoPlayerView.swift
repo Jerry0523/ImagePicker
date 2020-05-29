@@ -1,5 +1,5 @@
 //
-//  ActivityIndicator.swift
+//  VideoPlayerView.swift
 //  ImagePickerMacOSDemo
 //
 //  Created by Jerry Wong on 2020/5/1.
@@ -9,7 +9,7 @@
 import SwiftUI
 import AVKit
 
-public struct VideoPlayer {
+public struct VideoPlayerView {
 
     var playerItem: AVPlayerItem
 
@@ -33,7 +33,7 @@ public struct VideoPlayer {
 }
 
 #if os(iOS)
-extension VideoPlayer: SwiftUIViewControllerRepresentable {
+extension VideoPlayerView: SwiftUIViewControllerRepresentable {
     
     public func makeUIViewController(context: Context) -> AVPlayerViewController {
         let videoViewController = AVPlayerViewController()
@@ -59,12 +59,12 @@ extension VideoPlayer: SwiftUIViewControllerRepresentable {
         context.coordinator.togglePlay(isPlaying: isPlaying.wrappedValue)
     }
 
-    public func makeCoordinator() -> VideoCoordinator {
-        return VideoCoordinator(videoPlayer: self)
+    public func makeCoordinator() -> VideoPlayerCoordinator {
+        return VideoPlayerCoordinator(videoPlayerView: self)
     }
 }
 #elseif os(macOS)
-extension VideoPlayer: SwiftUIViewRepresentable {
+extension VideoPlayerView: SwiftUIViewRepresentable {
 
     public func makeNSView(context: Context) -> AVPlayerView {
         let videoView = AVPlayerView()
@@ -99,19 +99,19 @@ extension VideoPlayer: SwiftUIViewRepresentable {
         context.coordinator.togglePlay(isPlaying: isPlaying.wrappedValue)
     }
 
-    public func makeCoordinator() -> VideoCoordinator {
-        return VideoCoordinator(videoPlayer: self)
+    public func makeCoordinator() -> VideoPlayerCoordinator {
+        return VideoPlayerCoordinator(videoPlayerView: self)
     }
 }
 #endif
 
-extension VideoPlayer {
+extension VideoPlayerView {
     
-    public class VideoCoordinator: NSObject {
+    public class VideoPlayerCoordinator: NSObject {
 
         var playerContext = "playerContext"
 
-        let videoPlayer: VideoPlayer
+        let videoPlayerView: VideoPlayerView
 
         var timeObserver: Any?
 
@@ -124,7 +124,7 @@ extension VideoPlayer {
                 addKVOObservers(to: player)
 
                 NotificationCenter.default.addObserver(self,
-                                                       selector:#selector(VideoPlayer.VideoCoordinator.playerItemDidReachEnd),
+                                                       selector:#selector(VideoPlayerView.VideoPlayerCoordinator.playerItemDidReachEnd),
                                                        name:.AVPlayerItemDidPlayToEndTime,
                                                        object:player?.currentItem)
 
@@ -161,8 +161,8 @@ extension VideoPlayer {
         
         var item: AVPlayerItem?
 
-        init(videoPlayer: VideoPlayer){
-            self.videoPlayer = videoPlayer
+        init(videoPlayerView: VideoPlayerView){
+            self.videoPlayerView = videoPlayerView
             super.init()
         }
 
@@ -173,19 +173,19 @@ extension VideoPlayer {
         }
 
         @objc public func playerItemDidReachEnd(notification: NSNotification) {
-            if videoPlayer.loop.wrappedValue {
+            if videoPlayerView.loop.wrappedValue {
                 player?.seek(to: .zero)
                 player?.play()
             } else {
-                videoPlayer.isPlaying.wrappedValue = false
+                videoPlayerView.isPlaying.wrappedValue = false
             }
         }
 
         @objc public func updateStatus() {
             if let player = player {
-                videoPlayer.isPlaying.wrappedValue = player.rate > 0
+                videoPlayerView.isPlaying.wrappedValue = player.rate > 0
             } else {
-                videoPlayer.isPlaying.wrappedValue = false
+                videoPlayerView.isPlaying.wrappedValue = false
             }
         }
 
@@ -210,63 +210,63 @@ extension VideoPlayer {
             }
             if let player = player {
                 #if os(macOS)
-                videoPlayer.isMuted.wrappedValue = player.volume == 0
+                videoPlayerView.isMuted.wrappedValue = player.volume == 0
                 #else
-                videoPlayer.isMuted.wrappedValue = player.isMuted
+                videoPlayerView.isMuted.wrappedValue = player.isMuted
                 #endif
             }
         }
     }
 }
 // MARK: - Modifiers
-extension VideoPlayer {
+extension VideoPlayerView {
 
-    public func pictureInPicturePlayback(_ value:Bool) -> VideoPlayer {
+    public func pictureInPicturePlayback(_ value:Bool) -> VideoPlayerView {
         var new = self
         new.allowsPictureInPicturePlayback = value
         return new
     }
 
-    public func playbackControls(_ value: Bool) ->VideoPlayer {
+    public func playbackControls(_ value: Bool) ->VideoPlayerView {
         var new = self
         new.showsPlaybackControls = value
         return new
     }
 
-    public func isMuted(_ value: Bool) -> VideoPlayer {
+    public func isMuted(_ value: Bool) -> VideoPlayerView {
         return isMuted(.constant(value))
     }
 
-    public func isMuted(_ value: Binding<Bool>) -> VideoPlayer {
+    public func isMuted(_ value: Binding<Bool>) -> VideoPlayerView {
         var new = self
         new.isMuted = value
         return new
     }
 
-    public func isPlaying(_ value: Bool) -> VideoPlayer {
+    public func isPlaying(_ value: Bool) -> VideoPlayerView {
         let new = self
         new.isPlaying.wrappedValue = value
         return new
     }
 
-    public func isPlaying(_ value: Binding<Bool>) -> VideoPlayer {
+    public func isPlaying(_ value: Binding<Bool>) -> VideoPlayerView {
         var new = self
         new.isPlaying = value
         return new
     }
 
-    public func videoGravity(_ value: AVLayerVideoGravity) -> VideoPlayer {
+    public func videoGravity(_ value: AVLayerVideoGravity) -> VideoPlayerView {
         var new = self
         new.videoGravity = value
         return new
     }
 
-    public func loop(_ value: Bool) -> VideoPlayer {
+    public func loop(_ value: Bool) -> VideoPlayerView {
         self.loop.wrappedValue = value
         return self
     }
 
-    public func loop(_ value: Binding<Bool>) -> VideoPlayer {
+    public func loop(_ value: Binding<Bool>) -> VideoPlayerView {
         var new = self
         new.loop = value
         return new

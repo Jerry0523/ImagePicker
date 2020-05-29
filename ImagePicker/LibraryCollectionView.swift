@@ -35,7 +35,7 @@ struct LibraryCollectionView : View {
                              ForEach(self.assetsProvider.rowCountIdentifier(for: self.columnCount), id: \.self) { rowIdentifier in
                                 HStack(spacing: LibraryCollectionView.CellInsets) {
                                     ForEach(0..<self.columnCount, id: \.self) { column in
-                                        PHAssetView(
+                                        PHAssetSummaryView (
                                             self.assetsProvider.asset (
                                                 at: rowIdentifier.index,
                                                 column: column,
@@ -64,7 +64,7 @@ struct LibraryCollectionView : View {
                             self.assetsProvider.selectedAssets.count > 0 ? AnyView(Text("\(self.assetsProvider.selectedAssets.count) selected ").font(.subheadline)) : AnyView(EmptyView())
                           })
                     }, detail: {
-                        GalleryView()
+                        PHAssetDetailView()
                     }, showDetailPublisher: self.assetsProvider
                         .$focusedAssets
                         .map{ ($0?.count ?? 0) > 0 }

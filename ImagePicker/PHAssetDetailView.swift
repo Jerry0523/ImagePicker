@@ -1,5 +1,5 @@
 //
-//  GalleryView.swift
+//  PHAssetDetailView.swift
 //  ImagePickerMacOSDemo
 //
 //  Created by Jerry Wong on 2020/5/1.
@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-struct GalleryView: View {
+struct PHAssetDetailView: View {
     
     @EnvironmentObject var assetsProvider: AssetsProvider
     @Environment(\.assetsLoader) var assetsLoader: AssetsLoader
@@ -20,13 +20,13 @@ struct GalleryView: View {
                 switch asset.playbackStyle {
                 case .image, .imageAnimated:
                     return AnyView (
-                        PHDetailImageView(asset, containerSize: proxy.size, task: self.assetsLoader.imageTask(for: asset))
+                        PHImageContentView(asset, containerSize: proxy.size, task: self.assetsLoader.imageTask(for: asset))
                             .frame(width: proxy.size.width, height: proxy.size.height)
                     )
                 case .video, .videoLooping:
-                    return AnyView(PHDetailVideoView(self.assetsLoader.videoTask(for: asset), containerSize: proxy.size).frame(width: proxy.size.width, height: proxy.size.height))
+                    return AnyView(PHVideoContentView(self.assetsLoader.videoTask(for: asset), containerSize: proxy.size).frame(width: proxy.size.width, height: proxy.size.height))
                 case .livePhoto:
-                    return AnyView(PHDetailLivePhotoView(self.assetsLoader.livePhotoTask(for: asset), containerSize: proxy.size).frame(width: proxy.size.width, height: proxy.size.height))
+                    return AnyView(PHLivePhotoContentView(self.assetsLoader.livePhotoTask(for: asset), containerSize: proxy.size).frame(width: proxy.size.width, height: proxy.size.height))
                 default:
                     return AnyView(EmptyView())
                 }
@@ -43,11 +43,3 @@ struct GalleryView: View {
             }
     }
 }
-
-#if DEBUG
-struct GalleryView_Previews: PreviewProvider {
-    static var previews: some View {
-        GalleryView().frame(width: 500, height: 500)
-    }
-}
-#endif
