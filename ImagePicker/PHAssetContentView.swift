@@ -41,7 +41,7 @@ struct PHLivePhotoContentView : View {
         return makeView()
             .frame(width: containerSize.width, height: containerSize.height)
             .onAppear {
-                self.task.load(size: .zero, isThumbnail: false, isCache: false)
+                self.task.load(size: .zero, isCache: false)
             }
     }
     
@@ -75,7 +75,7 @@ struct PHVideoContentView : View {
         return makeView()
             .frame(width: containerSize.width, height: containerSize.height)
             .onAppear {
-                self.task.load(size: .zero, isThumbnail: false, isCache: false)
+                self.task.load(size: .zero, isCache: false)
             }
     }
     
@@ -118,7 +118,7 @@ struct PHImageContentView : View {
             .onChanged {
                 self.magnifyBy = min(2.0, max(0.5, $0))
             }.onEnded { _ in
-                self.task.load(size: .init(width: self.targetSize.width * self.magnifyBy * ScreenScale, height: self.targetSize.height * self.magnifyBy * ScreenScale), isThumbnail: false, isCache: false)
+                self.task.load(size: .init(width: self.targetSize.width * self.magnifyBy * ScreenScale, height: self.targetSize.height * self.magnifyBy * ScreenScale), isCache: false)
             }
         }
     
@@ -171,7 +171,7 @@ struct PHImageContentView : View {
             .offset(offsetBy)
             .rotationEffect(self.rotateBy)
             .onAppear {
-                self.task.load(size: self.imageFetchSize, isThumbnail: false, isCache: false)
+                self.task.load(size: self.imageFetchSize, isCache: false)
             }
             .onDisappear {
                 self.task.unload(clearUnCached: true)

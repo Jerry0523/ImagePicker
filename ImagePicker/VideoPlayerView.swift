@@ -8,6 +8,7 @@
 
 import SwiftUI
 import AVKit
+import Combine
 
 public struct VideoPlayerView {
 
@@ -114,6 +115,8 @@ extension VideoPlayerView {
         let videoPlayerView: VideoPlayerView
 
         var timeObserver: Any?
+        
+        var playerItemStopSubscription: AnyCancellable?
 
         var player: AVPlayer? {
             didSet {
@@ -122,13 +125,13 @@ extension VideoPlayerView {
 
                 addTimeObserver(to: player)
                 addKVOObservers(to: player)
-
-                NotificationCenter.default.addObserver(self,
-                                                       selector:#selector(VideoPlayerView.VideoPlayerCoordinator.playerItemDidReachEnd),
-                                                       name:.AVPlayerItemDidPlayToEndTime,
-                                                       object:player?.currentItem)
-
-
+                
+                playerItemStopSubscription = NotificationCenter
+                    .default
+                    .publisher(for: .AVPlayerItemDidPlayToEndTime, object: player?.currentItem)
+                    .sink { [weak self] note in
+                        self?.playerItemDidReachEnd(notification: note)
+                    }
             }
         }
 
@@ -172,7 +175,7 @@ extension VideoPlayerView {
             removeKVOObservers(from: player)
         }
 
-        @objc public func playerItemDidReachEnd(notification: NSNotification) {
+        @objc public func playerItemDidReachEnd(notification: Notification) {
             if videoPlayerView.loop.wrappedValue {
                 player?.seek(to: .zero)
                 player?.play()

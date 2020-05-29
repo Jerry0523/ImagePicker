@@ -38,7 +38,7 @@ protocol SupportedAsset where Options: ProgressOptions {
 class AssetsLoader {
     
     func livePhotoTask(for asset: PHAsset) -> Task<PHLivePhoto> {
-        Task<PHLivePhoto>(asset, onLoad: { [unowned self] asset, targetSize, isThumbnail, promise in
+        Task<PHLivePhoto>(asset, onLoad: { [unowned self] asset, targetSize, promise in
             self.request(asset, param: .init(targetSize: targetSize, contentMode: .aspectFill, options: PHLivePhoto.preferredReqOpts), promise: promise)
             }, onUnload: { [unowned self] reqID in
                 self.manager.cancelImageRequest(reqID)
@@ -47,7 +47,7 @@ class AssetsLoader {
     }
     
     func videoTask(for asset: PHAsset) -> Task<AVPlayerItem> {
-        Task<AVPlayerItem>(asset, onLoad: { [unowned self] asset, targetSize, isThumbnail, promise in
+        Task<AVPlayerItem>(asset, onLoad: { [unowned self] asset, targetSize, promise in
             self.request(asset, param: .init(targetSize: .zero, contentMode: .aspectFill, options: AVPlayerItem.preferredReqOpts), promise: promise)
             }, onUnload: { [unowned self] reqID in
                 self.manager.cancelImageRequest(reqID)
@@ -59,7 +59,7 @@ class AssetsLoader {
         if let stored = imageTasks[asset] {
             return stored
         }
-        let task = Task<ImageType>(asset, onLoad: { [unowned self] asset, targetSize, isThumbnail, promise in
+        let task = Task<ImageType>(asset, onLoad: { [unowned self] asset, targetSize, promise in
                 self.request(asset, param: .init(targetSize: targetSize, contentMode: .aspectFill, options: ImageType.preferredReqOpts), promise: promise)
             }, onUnload: { [unowned self] reqID in
                 self.manager.cancelImageRequest(reqID)
@@ -67,14 +67,6 @@ class AssetsLoader {
         )
         imageTasks[asset] = task
         return task
-    }
-    
-    func prefetch(_ assets: [PHAsset]?, targetSize: CGSize) {
-        manager.stopCachingImagesForAllAssets()
-        guard let assets = assets, targetSize != .zero else {
-            return
-        }
-        manager.startCachingImages(for: assets, targetSize: targetSize, contentMode: .aspectFill, options: ImageType.preferredReqOpts)
     }
     
     private func request<T>(_ asset: PHAsset, param: RequestParam<T.Options>, promise: @escaping (Task<T>.Result) -> ()) -> PHImageRequestID? {
@@ -125,7 +117,7 @@ class AssetsLoader {
             
         }
         
-        typealias OnLoad = (PHAsset, CGSize, Bool, (@escaping (Result) -> ())) -> PHImageRequestID?
+        typealias OnLoad = (PHAsset, CGSize, (@escaping (Result) -> ())) -> PHImageRequestID?
         
         typealias OnUnload = (PHImageRequestID) -> ()
         
@@ -137,18 +129,30 @@ class AssetsLoader {
             self.onUnload = onUnload
         }
         
-        func result(for targetSize: CGSize?) -> Result {
-            if let targetSize = targetSize {
-                return resultSet[targetSize] ?? .idle
-            } else {
-                var maxWidth = CGFloat(0)
-                var mTargetSize: CGSize?
-                for key in resultSet.keys {
-                    if key.width > maxWidth {
-                        maxWidth = key.width
-                        mTargetSize = key
+        func result(for targetSize: CGSize?, exactMode: Bool = false) -> Result {
+            if let targetSize = targetSize, targetSize.height > 0 {
+                if let result = resultSet[targetSize] {
+                    return result
+                } else {
+                    if exactMode {
+                        return .idle
+                    } else {
+                        let candidate = resultSet
+                            .filter { $0.value.isCompleted }
+                            .sorted { (left, right) -> Bool in
+                                let leftRatioDelta = abs(left.key.ratio - targetSize.ratio)
+                                let rightRatioDelta = abs(right.key.ratio - targetSize.ratio)
+                                if leftRatioDelta != rightRatioDelta {
+                                    return leftRatioDelta > rightRatioDelta
+                                } else {
+                                    return left.key.width < right.key.width
+                                }
+                            }.last?.value
+                        return candidate ?? .idle
                     }
                 }
+            } else {
+                let mTargetSize = Array(resultSet.keys).sorted { $0.width < $1.width }.last
                 if let targetSize = mTargetSize {
                     return resultSet[targetSize] ?? .idle
                 } else {
@@ -161,11 +165,11 @@ class AssetsLoader {
             unload()
         }
         
-        func load(size: CGSize, isThumbnail: Bool = true, isCache: Bool = true) {
-            if result(for: size).isCompleted || requestID != nil {
+        func load(size: CGSize, isCache: Bool = true) {
+            if result(for: size, exactMode: true).isCompleted || requestID != nil {
                 return
             }
-            requestID = onLoad(asset, size, isThumbnail) { result in
+            requestID = onLoad(asset, size) { result in
                 self.requestID = nil
                 if !self.hasCompletedResult() || result.isCompleted {
                     if isCache {
@@ -177,9 +181,7 @@ class AssetsLoader {
         }
         
         func unload(clearUnCached: Bool = false) {
-            if let reqID = requestID {
-                onUnload(reqID)
-            }
+            cancleRequestTaskIfNeeded()
             if clearUnCached {
                 resultSet
                     .keys
@@ -187,6 +189,13 @@ class AssetsLoader {
                     .forEach {
                         resultSet.removeValue(forKey: $0)
                     }
+            }
+        }
+        
+        private func cancleRequestTaskIfNeeded() {
+            if let reqID = requestID {
+                onUnload(reqID)
+                requestID = nil
             }
         }
         
@@ -215,6 +224,8 @@ class AssetsLoader {
 }
 
 extension CGSize : Hashable {
+    
+    var ratio: CGFloat { height <= 0 ? 0 : width / height }
     
     public func hash(into hasher: inout Hasher) {
         width.hash(into: &hasher)

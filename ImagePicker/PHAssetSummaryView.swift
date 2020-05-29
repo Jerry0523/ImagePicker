@@ -70,11 +70,13 @@ struct PHAssetSummaryView: View {
             return AnyView(
                 ZStack(alignment: .bottomTrailing) {
                     PHThumbnailContentView(targetSize: targetSize, loadTask: assetsLoader.imageTask(for: asset))
-                    Text(secondsToHoursMinutesSeconds(seconds: asset.duration))
-                        .foregroundColor(.white)
-                        .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 0)
-                        .font(.footnote)
-                        .padding(5)
+                    if asset.playbackStyle == .video {
+                        Text(secondsToHoursMinutesSeconds(seconds: asset.duration))
+                            .foregroundColor(.white)
+                            .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 0)
+                            .font(.footnote)
+                            .padding(5)
+                    }
                 }
                 .cornerRadius(self.assetsProvider.isSelected(for: asset) ? 3 : 0)
                 .overlay(

@@ -13,6 +13,8 @@ struct LibraryCollectionView : View {
     
     @EnvironmentObject var assetsProvider: AssetsProvider
     
+    @Environment(\.assetsLoader) var assetsLoader: AssetsLoader
+    
     let columnCount: Int
     
     let gridRatio: Float
