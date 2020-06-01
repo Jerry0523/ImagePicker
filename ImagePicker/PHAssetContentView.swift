@@ -9,6 +9,70 @@
 import SwiftUI
 import Photos
 
+struct PHContentControlView<Content: View> : View {
+    
+    @State var magnifyBy = CGFloat(1.0)
+       
+    @State var offsetBy = CGSize.zero
+       
+    @State var accumulatedOffsetBy = CGSize.zero
+       
+    @State var accumulatedMagnifyBy = CGFloat(0)
+    
+    let onMagnifyEnded: ((CGFloat) -> ())?
+    
+    let content: () -> Content
+    
+    var magnification: some Gesture {
+        MagnificationGesture()
+            .onChanged {
+                self.magnifyBy = $0 + self.accumulatedMagnifyBy
+            }.onEnded { _ in
+                withAnimation {
+                    self.magnifyBy = min(2.0, max(1.0, self.magnifyBy))
+                    self.accumulatedMagnifyBy = self.magnifyBy - 1.0
+                    self.onMagnifyEnded?(self.magnifyBy)
+                }
+            }
+        }
+    
+    var move: some Gesture {
+        DragGesture()
+            .onChanged {
+                let translation = $0.translation
+                self.offsetBy = CGSize(width: self.accumulatedOffsetBy.width + translation.width, height: self.accumulatedOffsetBy.height + translation.height)
+            }.onEnded { _ in
+                withAnimation {
+                    if self.magnifyBy <= 1 {
+                        self.offsetBy = .zero
+                    }
+                    self.accumulatedOffsetBy = self.offsetBy
+                }
+            }
+    }
+    
+    var doubleTap: some Gesture {
+        TapGesture(count: 2)
+            .onEnded {
+                withAnimation {
+                    self.magnifyBy = 1.0
+                    self.offsetBy = .zero
+                    self.accumulatedOffsetBy = .zero
+                    self.accumulatedMagnifyBy = 0
+                }
+            }
+    }
+    
+    var body: some View {
+        content()
+            .scaleEffect(self.magnifyBy)
+            .offset(offsetBy)
+            .gesture(magnification)
+            .simultaneousGesture(move)
+            .simultaneousGesture(doubleTap)
+    }
+}
+
 struct PHLivePhotoContentView : View {
     
     @ObservedObject var task: AssetsLoader.Task<PHLivePhoto>
@@ -26,8 +90,8 @@ struct PHLivePhotoContentView : View {
         let makeView = { () -> AnyView in
             switch self.task.result(for: .zero) {
             case .onCompletion(let item):
-                return AnyView(LivePhotoView(livePhoto: item, isPlaying: self.$isPlaying).onTapGesture {
-                    self.isPlaying.toggle()
+                return AnyView(PHContentControlView(onMagnifyEnded: nil) {
+                    LivePhotoView(livePhoto: item, isPlaying: self.$isPlaying)
                 })
             case .onError(let error):
                 return AnyView(Text(error.localizedDescription))
@@ -85,14 +149,6 @@ struct PHImageContentView : View {
     
     @ObservedObject var task: AssetsLoader.Task<ImageType>
     
-    @State var magnifyBy = CGFloat(1.0)
-    
-    @State var offsetBy = CGSize.zero
-    
-    @State var rotateBy = Angle(radians: 0)
-    
-    @State var p_offsetBy = CGSize.zero
-    
     let targetSize: CGSize
     
     var imageFetchSize: CGSize {
@@ -110,52 +166,25 @@ struct PHImageContentView : View {
         } else {
             self.targetSize = .init(width: phRatio * containerSize.height, height: containerSize.height)
         }
-        
-    }
-    
-    var magnification: some Gesture {
-        MagnificationGesture()
-            .onChanged {
-                self.magnifyBy = min(2.0, max(0.5, $0))
-            }.onEnded { _ in
-                self.task.load(size: .init(width: self.targetSize.width * self.magnifyBy * ScreenScale, height: self.targetSize.height * self.magnifyBy * ScreenScale), isCache: false)
-            }
-        }
-    
-    var move: some Gesture {
-        DragGesture()
-            .onChanged {
-                let translation = $0.translation
-                self.offsetBy = CGSize(width: self.p_offsetBy.width + translation.width, height: self.p_offsetBy.height + translation.height)
-            }.onEnded { _ in
-                self.p_offsetBy = self.offsetBy
-            }
-    }
-    
-//    var rotate: some Gesture {
-//        RotationGesture()
-//            .onChanged { angle in
-//                self.rotateBy = angle
-//            }
-//    }
-    
-    var doubleTap: some Gesture {
-        TapGesture(count: 2)
-            .onEnded {
-                withAnimation {
-                    self.magnifyBy = 1.0
-                    self.rotateBy = .init(radians: 0)
-                    self.offsetBy = .zero
-                    self.p_offsetBy = .zero
-                }
-            }
+        self.task.load(size: self.imageFetchSize, isCache: false)
     }
     
     var body: some View {
         let makeView = { () -> AnyView in
             switch self.task.result(for: nil) {
             case .onCompletion(let image):
-                return AnyView(Image(imageType: image).resizable().aspectRatio(contentMode: .fit))
+                return AnyView(
+                    PHContentControlView(
+                        onMagnifyEnded: { magnifyBy in
+                            self.task.load(size: .init(
+                                width: self.targetSize.width * magnifyBy * ScreenScale,
+                                height: self.targetSize.height * magnifyBy * ScreenScale
+                            ), isCache: false)
+                        }, content: {
+                            Image(imageType: image).resizable().aspectRatio(contentMode: .fit)
+                        }
+                    )
+                )
             case .onError(let error):
                 return AnyView(Text(error.localizedDescription))
             case .inProgress(let p):
@@ -167,19 +196,9 @@ struct PHImageContentView : View {
         
         return makeView()
             .frame(width: targetSize.width, height: targetSize.height, alignment: .center)
-            .scaleEffect(self.magnifyBy)
-            .offset(offsetBy)
-            .rotationEffect(self.rotateBy)
-            .onAppear {
-                self.task.load(size: self.imageFetchSize, isCache: false)
-            }
             .onDisappear {
                 self.task.unload(clearUnCached: true)
             }
-            .gesture(magnification)
-            .simultaneousGesture(move)
-//            .simultaneousGesture(rotate)
-            .simultaneousGesture(doubleTap)
     }
 }
 

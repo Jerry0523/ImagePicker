@@ -20,7 +20,7 @@ struct PHAssetDetailView: View {
                 switch asset.playbackStyle {
                 case .image, .imageAnimated:
                     return AnyView (
-                        PHImageContentView(asset, containerSize: proxy.size, task: self.assetsLoader.imageTask(for: asset))
+                       PHImageContentView(asset, containerSize: proxy.size, task: self.assetsLoader.imageTask(for: asset))
                             .frame(width: proxy.size.width, height: proxy.size.height)
                     )
                 case .video, .videoLooping:
@@ -36,7 +36,6 @@ struct PHAssetDetailView: View {
             }
         }
             .clipped()
-            .edgesIgnoringSafeArea(.bottom)
             .onDisappear {
                 self.assetsProvider.focusedAssets = nil
                 self.assetsProvider.focusedIndex = nil
