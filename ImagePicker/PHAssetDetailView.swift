@@ -36,6 +36,20 @@ struct PHAssetDetailView: View {
             }
         }
             .clipped()
+            .bridge_navigationBarItems(trailing: (self.assetsProvider.focusedAssets?.count ?? 0) > 1 ? AnyView (
+                    HStack {
+                        Button(action: {
+                            self.assetsProvider.focusedIndex = max(0, (self.assetsProvider.focusedIndex ?? 0) - 1)
+                        }) {
+                            Image(systemName: "chevron.left").padding(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 10))
+                        }
+                        Button(action: {
+                            self.assetsProvider.focusedIndex = min((self.assetsProvider.focusedAssets?.count ?? 0) - 1, (self.assetsProvider.focusedIndex ?? 0) + 1)
+                        }) {
+                            Image(systemName: "chevron.right").padding(EdgeInsets(top: 8, leading: 10, bottom: 8, trailing: 6))
+                        }
+                    }
+                ) : AnyView(EmptyView()))
             .onDisappear {
                 self.assetsProvider.focusedAssets = nil
                 self.assetsProvider.focusedIndex = nil

@@ -68,6 +68,14 @@ extension View {
         return self.navigationBarItems(leading: leading.offset(x: -6, y: 0), trailing: trailing.offset(x: 6, y: 0))
     #endif
     }
+    
+    public func bridge_navigationBarItems<T>(trailing: T) -> some View where T : View {
+       #if os(macOS)
+           return self
+       #else
+        return self.navigationBarItems(trailing: trailing)
+       #endif
+       }
 }
 
 struct BridgeNavigationView<Master: View, Detail: View> : View {
